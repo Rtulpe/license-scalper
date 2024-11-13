@@ -60,10 +60,11 @@ async def main():
 
     # Launch the browser
     browser = await launch_browser(executable_path)
-    page = await browser.newPage()
+    pages = await browser.pages()
+    page = pages[-1]
     
 
-    # Navigate to the license plate gallery and accept cookies
+    # Navigate to the license plate gallery and the damn accept cookies
     await page.goto("https://platesmania.com/pl/gallery")
     await accept_cookies(page)
 
