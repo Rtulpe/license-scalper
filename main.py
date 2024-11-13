@@ -1,16 +1,19 @@
-# This is a sample Python script.
+# This project was created to save me 70 euros from these ukrainian lads
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+import asyncio
+from pyppeteer import launch
 
+async def scraper():
+    # Launch the browser
+    browser = await launch({'headless': False})
+    page = await browser.newPage()
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+    await page.goto("https://www.google.com/")
 
+    await page.screenshot({'path': 'example.png'})
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+    await browser.close()
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+# Run the main function
+if __name__ == "__main__":
+    asyncio.run(scraper())
