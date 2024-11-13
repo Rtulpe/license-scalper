@@ -5,49 +5,72 @@ from dotenv import load_dotenv
 import asyncio
 import time
 from pyppeteer import launch
- 
+
 # Load the environment variables
 load_dotenv()
+# Small pauses to not ddos the website
+sus_time = int(os.getenv('SUS_TIME'))
 
-async def scraper():
-    # Launch the browser
+def init_enviroment():
+    # Get paths
     executable_path = os.getenv('BROWSER_PATH')
-    browser = await launch({
-        'headless': False,
-        'executablePath': executable_path, # If nothing starts, this is the issue
-        'devtools': True, # Magically skips cloudflare checks
-        'args': [
-            '--incognito',  # Start in incognito mode (no previous session)
-            '--no-first-run',  # Skip first-run prompts
-            '--disable-restore-session-state',  # Disable restoring last session
-        ],
-        })
-    page = await browser.newPage()
+    print(executable_path)
+    image_path = os.getenv('IMG_PATH')
 
     # Make a folder for the images
-    image_path = os.getenv('IMG_PATH')
+
     try:
         os.makedirs(image_path)
     except FileExistsError:
         pass
 
-    await page.goto("https://platesmania.com/pl/gallery")
+    return [image_path, executable_path]
 
+async def launch_browser(executable_path):
+    browser = await launch({
+    'executablePath': executable_path, # If nothing starts, this is the issue
+    'devtools': True,
+    })
+
+    return browser
+
+async def accept_cookies(page):
     # Accept the damn cookies
     accept_button_selector = 'button.fc-button.fc-cta-consent.fc-primary-button'
+    await page.waitForSelector(accept_button_selector, timeout=500)
+
     try:
-        time.sleep(5)
-        await page.waitForSelector(accept_button_selector, timeout=500)
-        await page.click(accept_button_selector)
-        time.sleep(5)
-        print("The damn cookies have been accepted")
+        await asyncio.sleep(sus_time)  # Use asyncio.sleep instead of time.sleep
+        await page.waitForSelector(accept_button_selector, timeout=5000)  # increased timeout
+        
+        button = await page.querySelector(accept_button_selector)
+        if button is None:
+            print("Accept button not found!")
+        else:
+            await button.click()
+            print("The damn cookies have been accepted")
+
+        await asyncio.sleep(sus_time)  # wait a bit after clicking
     except Exception as e:
         print(f"Error accepting cookies: {e}")
 
-    await page.screenshot({'path': 'screenlog.png'})
+async def main():
+    # Init
+    [image_path, executable_path] = init_enviroment()
 
-    await browser.close() 
+    # Launch the browser
+    browser = await launch_browser(executable_path)
+    page = await browser.newPage()
+    
+
+    # Navigate to the license plate gallery and accept cookies
+    await page.goto("https://platesmania.com/pl/gallery")
+    await accept_cookies(page)
+
+    #await page.screenshot({'path': '${image_path}/example.png'})
+
+    #await browser.close() 
 
 # Run the main function
 if __name__ == "__main__":
-    asyncio.run(scraper())
+    asyncio.run(main())
