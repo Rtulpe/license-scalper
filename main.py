@@ -14,7 +14,6 @@ sus_time = int(os.getenv('SUS_TIME'))
 def init_enviroment():
     # Get paths
     executable_path = os.getenv('BROWSER_PATH')
-    print(executable_path)
     image_path = os.getenv('IMG_PATH')
 
     # Make a folder for the images
@@ -27,9 +26,13 @@ def init_enviroment():
     return [image_path, executable_path]
 
 async def launch_browser(executable_path):
+    chrome_args = [
+        '--start-maximized',
+    ]
     browser = await launch({
     'executablePath': executable_path, # If nothing starts, this is the issue
     'devtools': True,
+    'args': chrome_args,
     })
 
     return browser
@@ -62,7 +65,6 @@ async def main():
     browser = await launch_browser(executable_path)
     pages = await browser.pages()
     page = pages[-1]
-    
 
     # Navigate to the license plate gallery and the damn accept cookies
     await page.goto("https://platesmania.com/pl/gallery")
