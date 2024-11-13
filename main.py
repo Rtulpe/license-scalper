@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 import asyncio
 import time
 from pyppeteer import launch
+from pyppeteer.page import Page
 
 # Load the environment variables
 load_dotenv()
@@ -16,6 +17,8 @@ def init_enviroment():
     executable_path = os.getenv('BROWSER_PATH')
     image_path = os.getenv('IMG_PATH')
 
+    image_amount = int(os.getenv('IMG_AMOUNT'))
+
     # Make a folder for the images
 
     try:
@@ -23,7 +26,7 @@ def init_enviroment():
     except FileExistsError:
         pass
 
-    return [image_path, executable_path]
+    return [image_path, executable_path, image_amount]
 
 async def launch_browser(executable_path):
     chrome_args = [
@@ -57,9 +60,24 @@ async def accept_cookies(page):
     except Exception as e:
         print(f"Error accepting cookies: {e}")
 
+async def get_images(page : Page, image_path, image_amount):
+    # Prefactored test code
+
+    # Get the div for the images
+    main_div_selector = '.col-md-9'
+    await page.waitForSelector(main_div_selector, timeout=5000)
+    main_div = await page.querySelector(main_div_selector)
+    print("Found the main div", main_div)
+
+
+
+    # Get the images
+    #for i in range(image_amount):
+    #    pass
+
 async def main():
     # Init
-    [image_path, executable_path] = init_enviroment()
+    [image_path, executable_path, image_amount] = init_enviroment()
 
     # Launch the browser
     browser = await launch_browser(executable_path)
@@ -70,9 +88,10 @@ async def main():
     await page.goto("https://platesmania.com/pl/gallery")
     await accept_cookies(page)
 
-    #await page.screenshot({'path': '${image_path}/example.png'})
+    # Go through the images
+    await get_images(page, image_path, image_amount)
 
-    #await browser.close() 
+    await browser.close() 
 
 # Run the main function
 if __name__ == "__main__":
