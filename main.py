@@ -3,11 +3,10 @@
 import os
 from dotenv import load_dotenv
 import asyncio
-import time
 from pyppeteer import launch
 from pyppeteer.page import Page
 from bs4 import BeautifulSoup as bs
-import requests
+import base64
 
 # Load the environment variables
 load_dotenv()
@@ -19,7 +18,7 @@ def init_enviroment():
     executable_path = os.getenv('BROWSER_PATH')
     image_path = os.getenv('IMG_PATH')
 
-    image_amount = int(os.getenv('IMG_AMOUNT'))
+    num_pages = int(os.getenv('NUM_PAGES'))
 
     # Make a folder for the images
 
@@ -28,7 +27,7 @@ def init_enviroment():
     except FileExistsError:
         pass
 
-    return [image_path, executable_path, image_amount]
+    return [image_path, executable_path, num_pages]
 
 async def launch_browser(executable_path):
     chrome_args = [
@@ -70,35 +69,43 @@ async def get_images(page : Page, image_path, num_pages):
         await page.waitForSelector(main_div_selector, timeout=5000)
         main_div = await page.querySelector(main_div_selector)
 
-        # Get all the plates
-        plates = []
+        # Get html context
+        main_div_html = await page.evaluate('(element) => element.outerHTML', main_div)
+        soup = bs(main_div_html, 'html.parser')
 
+        # Get all the plates, class of "col-xs-offset-3"
+        plates = soup.find_all("div", class_="col-xs-offset-3")
 
         for plate in plates:
 
             # Get the label
-            label =
+            label = plate.find('img')['alt']
+            print(label)
+
+            # Get the image url
+            image_url = str(plate.find('a')['href'])
+            image_url = image_url.replace("/pl/nomer", "")
+            image_url = "https://img03.platesmania.com/241114/o/" + image_url + ".jpg"
+            print(image_url)
+
+            # Download the image
+
+            await download_image(page, image_url, f"{image_path}/{label}.jpg")
+            await asyncio.sleep(sus_time)
+
 
         # Go to the next page
         # First page is not annotated
         # So, second page is "-1"
-        page.goto(f"https://platesmania.com/pl/gallery-{i}")
+        
+        # Wait a bit before proceeding
+        await asyncio.sleep(sus_time)
+        await page.goto(f"https://platesmania.com/pl/gallery-{i}")
     
-    # Get html context
-    main_div_html = await page.evaluate('(element) => element.outerHTML', main_div)
-    soup = bs(main_div_html, 'html.parser')
 
-def download_image(url, path):
-    response = requests.get(url, stream=True)
-    # Throw an error for bad status codes
-    response.raise_for_status()
-
-    with open(path, "wb") as file:
-        for chunk in response.iter_content(chunk_size=1024):
-            if not chunk:
-                break
-            file.write(chunk)
-
+async def download_image(page, url, path):
+    await page.goto(url)
+    await page.screenshot({'path': path})
 
 async def main():
     # Init
@@ -115,8 +122,6 @@ async def main():
 
     # Go through the images
     await get_images(page, image_path, num_pages)
-
-    time.sleep(50)
 
     await browser.close() 
 
