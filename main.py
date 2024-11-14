@@ -6,6 +6,8 @@ import asyncio
 import time
 from pyppeteer import launch
 from pyppeteer.page import Page
+from bs4 import BeautifulSoup as bs
+import requests
 
 # Load the environment variables
 load_dotenv()
@@ -60,24 +62,47 @@ async def accept_cookies(page):
     except Exception as e:
         print(f"Error accepting cookies: {e}")
 
-async def get_images(page : Page, image_path, image_amount):
-    # Prefactored test code
+async def get_images(page : Page, image_path, num_pages):
 
-    # Get the div for the images
-    main_div_selector = '.col-md-9'
-    await page.waitForSelector(main_div_selector, timeout=5000)
-    main_div = await page.querySelector(main_div_selector)
-    print("Found the main div", main_div)
+    for i in range(num_pages):
+        # Get the div for the images
+        main_div_selector = '.col-md-9'
+        await page.waitForSelector(main_div_selector, timeout=5000)
+        main_div = await page.querySelector(main_div_selector)
+
+        # Get all the plates
+        plates = []
 
 
+        for plate in plates:
 
-    # Get the images
-    #for i in range(image_amount):
-    #    pass
+            # Get the label
+            label =
+
+        # Go to the next page
+        # First page is not annotated
+        # So, second page is "-1"
+        page.goto(f"https://platesmania.com/pl/gallery-{i}")
+    
+    # Get html context
+    main_div_html = await page.evaluate('(element) => element.outerHTML', main_div)
+    soup = bs(main_div_html, 'html.parser')
+
+def download_image(url, path):
+    response = requests.get(url, stream=True)
+    # Throw an error for bad status codes
+    response.raise_for_status()
+
+    with open(path, "wb") as file:
+        for chunk in response.iter_content(chunk_size=1024):
+            if not chunk:
+                break
+            file.write(chunk)
+
 
 async def main():
     # Init
-    [image_path, executable_path, image_amount] = init_enviroment()
+    [image_path, executable_path, num_pages] = init_enviroment()
 
     # Launch the browser
     browser = await launch_browser(executable_path)
@@ -89,7 +114,9 @@ async def main():
     await accept_cookies(page)
 
     # Go through the images
-    await get_images(page, image_path, image_amount)
+    await get_images(page, image_path, num_pages)
+
+    time.sleep(50)
 
     await browser.close() 
 
